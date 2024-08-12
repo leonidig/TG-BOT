@@ -21,7 +21,22 @@ character_images = {
 }
 
 def update_character_image(progress):
-    return character_images.get(progress, '/Users/leonidlisovskiy/Desktop/TG-BOT/bot/imgs/25.png')
+    if progress < 50:
+        return character_images[25]
+    elif 50 <= progress < 66:
+        return character_images[50]
+    elif 66 <= progress < 100:
+        return character_images[75]
+    else:
+        return character_images[100]
+
+
+def calculate_progress(completed_tasks_count, total_tasks_count):
+    if total_tasks_count == 0:
+        return 0
+    progress = (completed_tasks_count / total_tasks_count) * 100
+    return round(progress, 2)
+
 
 @client.on(events.NewMessage(pattern='/start'))
 async def start(event):
@@ -30,7 +45,7 @@ async def start(event):
     first_name = sender.first_name
     enter_tasks = [
         [button.inline("Ввести теми", b'enter_tasks')],
-        [button.inline("Видалити темy", b'delete')],
+        [button.inline("Видалити тему", b'delete')],
         [button.inline("Відмітити як виконані", b'completed_tasks')]
     ]
     
@@ -63,8 +78,8 @@ async def completed_tasks(event):
 @client.on(events.NewMessage(pattern='/commands'))
 async def send_all_commands(event):
     await event.respond('''
-/set_time - зазначити час нагадувань(чч:xx)
-/my_tasks - всі таски
+/set_time - зазначити час нагадувань (чч:хх)
+/my_tasks - всі задачі
 ''')
 
 @client.on(events.NewMessage(pattern='/set_time'))
@@ -124,7 +139,7 @@ async def handle_message(event):
                     new_tasks.append(task)
                     new_due_dates.append(due_date)
                 else:
-                    await event.respond(f"Неправильний формат: '{item}'. Будь ласка, введіть у форматі 'тема - дедлайн(рррр/мм/дд)'.")
+                    await event.respond(f"Неправильний формат: '{item}'. Будь ласка, введіть у форматі 'тема - дедлайн (рррр/мм/дд)'.")
                     return
 
             with Session() as session:
@@ -145,7 +160,6 @@ async def handle_message(event):
             await event.respond(f'Список тем оновлено:\n' +
                                 '\n'.join([f'{task} - {due_date}' for task, due_date in zip(all_tasks, all_due_dates)]))
 
-
         elif state == 'waiting_for_task_deletion':
             task_to_remove = event.text.strip().casefold()
 
@@ -154,7 +168,6 @@ async def handle_message(event):
                 if user:
                     existing_tasks = user.tasks.split('; ') if user.tasks else []
                     existing_due_dates = user.due_dates.split('; ') if user.due_dates else []
-
 
                     normalized_tasks = [task.casefold() for task in existing_tasks]
 
@@ -176,75 +189,80 @@ async def handle_message(event):
 
             await event.respond(response)
 
-        
         elif state == 'waiting_for_completed_tasks':
-                completed_tasks_input = event.text.strip()
-                completed_tasks = [task.strip() for task in completed_tasks_input.split(';')]
-                
-                with Session() as session:
-                    user = session.query(Main).filter(Main.id == user_id).first()
-                    if user:
-                        existing_tasks = user.tasks.split('; ') if user.tasks else []
-                        existing_due_dates = user.due_dates.split('; ') if user.due_dates else []
-                        completed = [task for task in completed_tasks if task in existing_tasks]
-                        
-                        if completed:
-                            total_tasks = len(existing_tasks) + len(completed_tasks)
+            completed_tasks_input = event.text.strip()
+            completed_tasks = [task.strip().lower() for task in completed_tasks_input.split(';')]
 
-                            for task in completed:
-                                existing_tasks.remove(task)
-                            user.tasks = '; '.join(existing_tasks)
-                            user.due_dates = '; '.join([date for t, date in zip(existing_tasks, existing_due_dates) if t in existing_tasks])
-                            user.experience += 10
-                            progress = (total_tasks - len(existing_tasks)) * 100 // total_tasks
-                            user.progress = progress
-                            session.commit()
-                            
-                            character_image = update_character_image(user.progress)
-                            
-                            await client.send_file(event.chat_id, character_image, caption="Непогано")
-                            response = f'Теми оновленно. Поточний прогрес: {user.progress}%. Зображення персонажу:'
-                        else:
-                            response = "Немає тем під видалення чи вони не знайдена"
-                
+            with Session() as session:
+                user = session.query(Main).filter(Main.id == user_id).first()
+                if user:
+                    existing_tasks = user.tasks.split('; ') if user.tasks else []
+                    existing_due_dates = user.due_dates.split('; ') if user.due_dates else []
+                    
+                    # Приводим все существующие задачи к нижнему регистру
+                    existing_tasks_lower = [task.lower() for task in existing_tasks]
+                    
+                    # Проверяем выполненные задачи на наличие в существующих задачах
+                    completed = [task for task in completed_tasks if task in existing_tasks_lower]
+
+                    if completed:
+                        total_tasks_count = len(existing_tasks)
+                        for task in completed:
+                            index = existing_tasks_lower.index(task)
+                            existing_tasks.pop(index)
+                            existing_due_dates.pop(index)
+                            existing_tasks_lower.pop(index)
+
+                        user.tasks = '; '.join(existing_tasks)
+                        user.due_dates = '; '.join([date for t, date in zip(existing_tasks, existing_due_dates) if t in existing_tasks])
+                        user.experience += 10
+
+                        completed_tasks_count = total_tasks_count - len(existing_tasks)
+                        progress = calculate_progress(completed_tasks_count, total_tasks_count)
+                        user.progress = progress
+                        session.commit()
+
+                        character_image = update_character_image(user.progress)
+
+                        await client.send_file(event.chat_id, character_image, caption=f"Непогано! Прогрес: {user.progress}%")
+                        response = f'Теми оновлено. Поточний прогрес: {user.progress}%.'
+                    else:
+                        response = "Немає тем для видалення або вони не знайдені."
+
                 del current_user_state[user_id]
-                
+
                 await event.respond(response)
 
-@client.on(events.NewMessage(pattern='/my_tasks'))
-async def my_tasks(event):
-    user_id = event.sender_id
-    
-    with Session() as session:
-        user = session.query(Main).filter(Main.id == user_id).first()
-        if user:
-            tasks = user.tasks.split('; ') if user.tasks else []
-            due_dates = user.due_dates.split('; ') if user.due_dates else []
-            tasks_due_dates = [f"{task} - {date}" for task, date in zip(tasks, due_dates)]
-            await event.respond(f"Твої задачі:\n" + "\n".join(tasks_due_dates))
-        else:
-            await event.respond("Користувач не знайден.")
 
 async def send_user_reminder(user_id):
+    enter_tasks = [
+                [button.inline("Ввести теми", b'enter_tasks')],
+                [button.inline("Видалити тему", b'delete')],
+                [button.inline("Відмітити як виконані", b'completed_tasks')]
+            ]
     with Session() as session:
         user = session.query(Main).filter(Main.id == user_id).first()
-        if user:
-            tasks = user.tasks.split('; ') if user.tasks else []
-            due_dates = user.due_dates.split('; ') if user.due_dates else []
-            if tasks:
-                tasks_due_dates = [f"{task} - {date}" for task, date in zip(tasks, due_dates)]
-                enter_tasks = [
-                    [button.inline("Ввести теми", b'enter_tasks')],
-                    [button.inline("Видалити темy", b'delete')],
-                    [button.inline("Відмітити як виконані", b'completed_tasks')]
-                ]
-                message = f"Нагадування! Ось твої поточні задачі:\n" + "\n".join(tasks_due_dates)
-                await client.send_message(user_id, message, buttons=enter_tasks)
+        if user and user.tasks:
+            task_list = user.tasks.split('; ')
+                   
+            await client.send_message(user_id, f"Нагадування! Ви маєте наступні завдання:\n" +
+                                      '\n'.join(task_list), buttons=enter_tasks)
+        else:
+            pass
 
-async def main():
-    scheduler.start()
-    await client.start()
-    await client.run_until_disconnected()
+@client.on(events.NewMessage(pattern='/my_tasks'))
+async def show_tasks(event):
+    user_id = event.sender_id
 
-if __name__ == '__main__':
-    client.loop.run_until_complete(main())
+    with Session() as session:
+        user = session.query(Main).filter(Main.id == user_id).first()
+        if user and user.tasks:
+            tasks = user.tasks.split('; ')
+            due_dates = user.due_dates.split('; ')
+            task_list = '\n'.join([f'{task} - {due_date}' for task, due_date in zip(tasks, due_dates)])
+            await event.respond(f'Ось ваші теми:\n{task_list}')
+        else:
+            await event.respond("У вас немає запланованих тем.")
+
+scheduler.start()
+client.run_until_disconnected()
