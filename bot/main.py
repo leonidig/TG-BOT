@@ -5,7 +5,7 @@ from db import Session, Main
 import datetime
 import random
 
-# Настройки API и токен
+
 api_hash = "460dbd52a66709679d8d65950720fe22"
 api_id = "29195129"
 bot_token = "7007501488:AAHvPHGw7XxutiZUPAbO_PE2x0WEX1DzcRY"
@@ -16,10 +16,10 @@ scheduler = AsyncIOScheduler()
 current_user_state = {}
 
 character_images = {
-    25: '/Users/leonidlisovskiy/Desktop/TG-BOT/bot/imgs/25.png',
-    50: '/Users/leonidlisovskiy/Desktop/TG-BOT/bot/imgs/50.png',
-    75: '/Users/leonidlisovskiy/Desktop/TG-BOT/bot/imgs/75.png',
-    100: '/Users/leonidlisovskiy/Desktop/TG-BOT/bot/imgs/100.png',
+    25: 'bot/imgs/25.gif',
+    50: 'bot/imgs/50.gif',
+    75: 'bot/imgs/75.gif',
+    100: 'bot/imgs/100.gif',
 }
 
 monsters_images = [
@@ -75,7 +75,7 @@ async def delete_task(event):
 
 @client.on(events.CallbackQuery(pattern=b'completed_tasks'))
 async def completed_tasks(event):
-    await event.respond("Введи ті теми, які ти пройшов, розділені ; : ")
+    await event.respond("Введи ті теми, які ти пройшов, розділені ; ")
     current_user_state[event.sender_id] = 'waiting_for_completed_tasks'
 
 @client.on(events.NewMessage(pattern='/commands'))
@@ -132,11 +132,11 @@ async def set_time(event):
 
                 await event.respond(f'Час нагадування встановлено на {reminder_time}.')
             else:
-                await event.respond("Некоректний час. Переконайтеся, що години від 0 до 23, а хвилини від 0 до 59.")
+                await event.respond("Некоректний час. Переконайтеся, що години від 0 до 23, а хвилини від 0 до 59")
         else:
-            await event.respond("Введіть час у форматі ГГ:ХХ, наприклад /set_time 14:30.")
+            await event.respond("Введіть час у форматі ГГ:ХХ, наприклад /set_time 14:30")
     else:
-        await event.respond("Введіть команду у форматі /set_time ГГ:ХХ, наприклад /set_time 14:30.")
+        await event.respond("Введіть команду у форматі /set_time ГГ:ХХ, наприклад /set_time 14:30")
 
 @client.on(events.NewMessage())
 async def handle_message(event):
