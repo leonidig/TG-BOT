@@ -22,8 +22,9 @@ character_images = {
     100: '/Users/leonidlisovskiy/Desktop/TG-BOT/bot/imgs/100.png',
 }
 
-monster_image = '/Users/leonidlisovskiy/Desktop/TG-BOT/bot/imgs/monster.gif'  # Путь к изображению монстра
-
+monsters_images = [
+                    'bot/imgs/monsters/1.png', 'bot/imgs/monsters/2.png', 'bot/imgs/monsters/3.png', 'bot/imgs/monsters/4.png', 'bot/imgs/monsters/5.png', 'bot/imgs/monsters/6.png', 'bot/imgs/monsters/7.png', 'bot/imgs/monsters/8.png', 'bot/imgs/monsters/9.png', 'bot/imgs/monsters/10.png', 'bot/imgs/monsters/11.png', 'bot/imgs/monsters/12.png', 'bot/imgs/monsters/13.png', 'bot/imgs/monsters/14.png', 'bot/imgs/monsters/15.png', 'bot/imgs/monsters/16.png', 'bot/imgs/monsters/17.png', 'bot/imgs/monsters/18.png', 'bot/imgs/monsters/19.png', 'bot/imgs/monsters/20.png', 'bot/imgs/monsters/21.gif'
+]
 def update_character_image(progress):
     if progress < 50:
         return character_images[25]
@@ -64,7 +65,7 @@ async def start(event):
 
 @client.on(events.CallbackQuery(pattern=b'enter_tasks'))
 async def enter_tasks(event):
-    await event.respond("Введи свої теми і дедлайни у форматі 'тема - дедлайн', розділені ; : ")
+    await event.respond("Введи свої теми і дедлайни у форматі 'тема - дедлайн(рррр/мм/дд)', розділені ; ")
     current_user_state[event.sender_id] = 'waiting_for_tasks'
 
 @client.on(events.CallbackQuery(pattern=b'delete'))
@@ -83,6 +84,7 @@ async def send_all_commands(event):
 /set_time - зазначити час нагадувань (чч:хх)
 /my_tasks - всі задачі
 /show_exp - показати ваш досвід
+/start - запуск
 ''')
 
 @client.on(events.NewMessage(pattern='/my_tasks'))
@@ -262,7 +264,12 @@ async def show_experience(event):
     with Session() as session:
         user = session.query(Main).filter(Main.id == user_id).first()
         if user:
-            await event.respond(f'Ваш поточний досвід: {user.experience} балів.')
+            enter_tasks = [
+                [button.inline("Ввести теми", b'enter_tasks')],
+                [button.inline("Видалити тему", b'delete')],
+                [button.inline("Відмітити як виконані", b'completed_tasks')]
+            ]
+            await event.respond(f'Ваш поточний досвід: {user.experience} балів.', buttons = enter_tasks)
         else:
             await event.respond("Користувач не знайден.")
 
@@ -288,10 +295,13 @@ async def send_user_reminder(user_id):
                 
                 user.experience -= 10
                 session.commit()
+                monster = random.choice(monsters_images)
+                print("*" * 80)
+                print(monster)
                 await client.send_message(
                     user_id,
                     f'Ви пропустили тему за  {previous_day}:\n{missed_tasks_list}\nМонстер це виявив та зняв у вас 10exp.\nТепер в тебе: {user.experience} exp.',
-                    file=monster_image
+                    file=monster
                 )
             else:
                 await client.send_message(
