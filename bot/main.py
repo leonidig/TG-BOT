@@ -116,8 +116,8 @@ async def set_time(event):
             hours = int(time_parts[0])
             minutes = int(time_parts[1])
 
-            # Добавляем 3 часа и корректируем время
-            hours = (hours + 3) % 24
+
+            hours = (hours - 3) % 24
 
             if 0 <= hours < 24 and 0 <= minutes < 60:
                 user_id = event.sender_id
@@ -140,7 +140,7 @@ async def set_time(event):
                     id=job_id
                 )
 
-                await event.respond(f'Час нагадування встановлено на {reminder_time}.')
+                await event.respond(f'Час нагадування встановлено коректно!')
             else:
                 await event.respond("Некоректний час. Переконайтеся, що години від 0 до 23, а хвилини від 0 до 59")
         else:
