@@ -213,11 +213,11 @@ async def handle_message(event):
                 if user:
                     existing_tasks = user.tasks.split('; ') if user.tasks else []
                     existing_due_dates = user.due_dates.split('; ') if user.due_dates else []
-                    
-                    # Приводим все существующие задачи к нижнему регистру
+
+
                     normalized_tasks = [task.lower() for task in existing_tasks]
                     
-                    # Найдем индексы выполненных задач в normalized_tasks
+
                     indices_to_remove = [normalized_tasks.index(task) for task in completed_tasks if task in normalized_tasks]
 
                     if indices_to_remove:
@@ -236,10 +236,15 @@ async def handle_message(event):
 
                         session.commit()
 
-                        await event.respond(f'Теми {completed_tasks_input} відмічені як виконані. Ось оновлений список:\n' +
-                                            '\n'.join([f'{task} - {due_date}' for task, due_date in zip(existing_tasks, existing_due_dates)]))
+                        progress_percentage = user.progress
+                        progress_message = f"Ви виконали {progress_percentage}% завдань."
 
-                        # Отправляем изображение персонажа на основе прогресса
+                        await event.respond(
+                            f'Теми {completed_tasks_input} відмічені як виконані. Ось оновлений список:\n' +
+                            '\n'.join([f'{task} - {due_date}' for task, due_date in zip(existing_tasks, existing_due_dates)]) +
+                            f'\n\n{progress_message}'
+                        )
+
                         character_image_path = update_character_image(user.progress)
                         await client.send_file(user_id, character_image_path, caption="Ти вже непогано прокачався")
 
