@@ -85,7 +85,6 @@ async def send_all_commands(event):
 /show_exp - показати ваш досвід
 ''')
 
-
 @client.on(events.NewMessage(pattern='/my_tasks'))
 async def show_tasks(event):
     user_id = event.sender_id
@@ -100,7 +99,6 @@ async def show_tasks(event):
         else:
             await event.respond("У вас немає запланованих тем.")
 
-
 @client.on(events.NewMessage(pattern='/set_time'))
 async def set_time(event):
     user_input = event.text.split()
@@ -109,7 +107,6 @@ async def set_time(event):
         if len(time_parts) == 2 and time_parts[0].isdigit() and time_parts[1].isdigit():
             hours = int(time_parts[0])
             minutes = int(time_parts[1])
-
             if 0 <= hours < 24 and 0 <= minutes < 60:
                 user_id = event.sender_id
                 reminder_time = f'{hours:02d}:{minutes:02d}'
@@ -158,7 +155,7 @@ async def handle_message(event):
                     new_tasks.append(task)
                     new_due_dates.append(due_date)
                 else:
-                    await event.respond(f"Неправильний формат: '{item}'. Будь ласка, введіть у форматі 'тема - дедлайн (рррр/мм/дд)'.")
+                    pass
                     return
 
             with Session() as session:
@@ -207,7 +204,6 @@ async def handle_message(event):
             del current_user_state[user_id]
 
             await event.respond(response)
-
         elif state == 'waiting_for_completed_tasks':
             completed_tasks_input = event.text.strip()
             completed_tasks = [task.strip().lower() for task in completed_tasks_input.split(';')]
@@ -219,69 +215,84 @@ async def handle_message(event):
                     existing_due_dates = user.due_dates.split('; ') if user.due_dates else []
                     
                     # Приводим все существующие задачи к нижнему регистру
-                    existing_tasks_lower = [task.lower() for task in existing_tasks]
+                    normalized_tasks = [task.lower() for task in existing_tasks]
                     
-                    # Проверяем выполненные задачи на наличие в существующих задачах
-                    completed = [task for task in completed_tasks if task in existing_tasks_lower]
+                    # Найдем индексы выполненных задач в normalized_tasks
+                    indices_to_remove = [normalized_tasks.index(task) for task in completed_tasks if task in normalized_tasks]
 
-                    if completed:
-                        total_tasks_count = len(existing_tasks)
-                        for task in completed:
-                            index = existing_tasks_lower.index(task)
-                            existing_tasks.pop(index)
-                            existing_due_dates.pop(index)
-                            existing_tasks_lower.pop(index)
-
+                    if indices_to_remove:
+                        for index in sorted(indices_to_remove, reverse=True):
+                            del existing_tasks[index]
+                            del existing_due_dates[index]
                         user.tasks = '; '.join(existing_tasks)
                         user.due_dates = '; '.join(existing_due_dates)
-                        user.experience += len(completed) * 10
-                        user.progress = calculate_progress(len(completed), total_tasks_count)
+
+                        user.experience += len(indices_to_remove) * 10
+
+                        completed_tasks_count = len(completed_tasks)
+                        total_tasks_count = len(existing_tasks) + completed_tasks_count
+
+                        user.progress = calculate_progress(completed_tasks_count, total_tasks_count)
+
                         session.commit()
 
-                        progress_image = update_character_image(user.progress)
-                        await event.respond(f'Вітаємо! Ви виконали {len(completed)} завдання(-я). Ваш досвід: {user.experience}.\n\nВаша поточна прогресія: {user.progress}%.', file=progress_image)
+                        await event.respond(f'Теми {completed_tasks_input} відмічені як виконані. Ось оновлений список:\n' +
+                                            '\n'.join([f'{task} - {due_date}' for task, due_date in zip(existing_tasks, existing_due_dates)]))
+
+                        # Отправляем изображение персонажа на основе прогресса
+                        character_image_path = update_character_image(user.progress)
+                        await client.send_file(user_id, character_image_path, caption="Ти вже непогано прокачався")
+
                     else:
-                        await event.respond("Немає виконаних завдань з вказаних.")
-                
+                        await event.respond("Жодна з введених тем не знайдена в вашому списку.")
+                else:
+                    await event.respond("Користувач не знайден.")
+
             del current_user_state[user_id]
 
 @client.on(events.NewMessage(pattern='/show_exp'))
-async def show_exp(event):
+async def show_experience(event):
     user_id = event.sender_id
+
     with Session() as session:
         user = session.query(Main).filter(Main.id == user_id).first()
         if user:
-            await event.respond(f'Ваш досвід: {user.experience}')
+            await event.respond(f'Ваш поточний досвід: {user.experience} балів.')
         else:
-            await event.respond("Користувач не знайдено.")
+            await event.respond("Користувач не знайден.")
 
 async def send_user_reminder(user_id):
+    now = datetime.datetime.now().date()
+    previous_day = now - datetime.timedelta(days=1)
+
     with Session() as session:
         user = session.query(Main).filter(Main.id == user_id).first()
         if user:
-            await client.send_message(user_id, "Не забудьте перевірити свої завдання!")
+            missed_tasks = []
+            if user.due_dates:
+                due_dates = user.due_dates.split('; ')
+                tasks = user.tasks.split('; ')
 
-async def check_inactivity():
-    now = datetime.datetime.now()
-    with Session() as session:
-        for user in session.query(Main).all():
-            last_active = user.last_active or now
-            if (now - last_active).total_seconds() > 60:  
-                user.experience = max(user.experience - 5, 0)
-                session.commit()
+                for due_date_str, task in zip(due_dates, tasks):
+                    due_date = datetime.datetime.strptime(due_date_str, '%Y/%m/%d').date()
+                    if due_date == previous_day:
+                        missed_tasks.append(task)
+
+            if missed_tasks:
+                missed_tasks_list = '\n'.join(missed_tasks)
                 
-                await client.send_message(user.id, "Вас знайшов монстр!", file=monster_image)
+                user.experience -= 10
+                session.commit()
+                await client.send_message(
+                    user_id,
+                    f'Ви пропустили тему за  {previous_day}:\n{missed_tasks_list}\nМонстер це виявив та зняв у вас 10exp.\nТепер в тебе: {user.experience} exp.',
+                    file=monster_image
+                )
+            else:
+                await client.send_message(
+                    user_id,
+                    "Не забудьте проверить свои задания!"
+                )
 
-scheduler.add_job(check_inactivity, 'interval', minutes=1)
 scheduler.start()
-
-@client.on(events.NewMessage())
-async def update_last_active(event):
-    user_id = event.sender_id
-    with Session() as session:
-        user = session.query(Main).filter(Main.id == user_id).first()
-        if user:
-            user.last_active = datetime.datetime.now()
-            session.commit()
-
 client.run_until_disconnected()
