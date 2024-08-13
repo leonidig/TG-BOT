@@ -1,7 +1,7 @@
 from os import getenv
 import datetime
 import random
-
+import re
 from telethon import TelegramClient, events, Button as button
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -56,7 +56,7 @@ async def start(event):
         [button.inline("Відмітити як виконані", b'completed_tasks')]
     ]
     start_hero = 'bot/imgs/start.gif'
-    await client.send_file(event.chat_id, start_hero, caption=f'Привіт, {first_name}!Зверху твій персонаж, якщо хочеш його прокращити та стати продуктивніше - заходь частіше!\nЦей бот створений для введення своїх тасків, їх відстежування, видалення.\nГоловна фішка цього бота - гейміфікфція щоб використання бота було цікавим та захоплюючим.\nby @big_pencil19 & @penoplastiz', buttons=enter_tasks)
+    await client.send_file(event.chat_id, start_hero, caption=f'Привіт, {first_name}! Зверху твій персонаж, якщо хочеш його прокращити та стати продуктивніше - заходь частіше!\nЦей бот створений для введення своїх тасків, їх відстежування, видалення.\nГоловна фішка цього бота - гейміфікфція щоб використання бота було цікавим та захоплюючим.\nby @big_pencil19 & @penoplastiz', buttons=enter_tasks)
 
     
     with Session() as session:
@@ -156,38 +156,78 @@ async def handle_message(event):
     if user_id in current_user_state:
         state = current_user_state[user_id]
 
+        import re
+from datetime import datetime
+
+@client.on(events.NewMessage())
+async def handle_message(event):
+    user_id = event.sender_id
+
+    if user_id in current_user_state:
+        state = current_user_state[user_id]
+
+        import re
+from datetime import datetime
+
+import re
+
+import re
+
+@client.on(events.NewMessage())
+async def handle_message(event):
+    user_id = event.sender_id
+
+    if user_id in current_user_state:
+        state = current_user_state[user_id]
+
         if state == 'waiting_for_tasks':
             tasks_input = event.text
             new_tasks = []
             new_due_dates = []
+            valid_input = True
+
+            pattern = re.compile(r'^([\w\s]+)\s*-\s*(\d{4}/\d{2}/\d{2})$|^([\w\s]+)-(\d{4}/\d{2}/\d{2})$')
 
             for item in tasks_input.split(';'):
-                parts = item.split('-')
-                if len(parts) == 2:
-                    task, due_date = parts[0].strip(), parts[1].strip()
+                item = item.strip()
+                match = pattern.match(item)
+                if match:
+                    if match.group(1) and match.group(2):
+                        task, due_date = match.group(1).strip(), match.group(2).strip()
+                    elif match.group(3) and match.group(4):
+                        task, due_date = match.group(3).strip(), match.group(4).strip()
+                    else:
+                        valid_input = False
+                        await event.respond(f"Некорректний формат ввода для елемента: '{item}'")
+                        return
+                    # Не проверяем корректность даты
                     new_tasks.append(task)
                     new_due_dates.append(due_date)
                 else:
-                    pass
+                    valid_input = False
+                    await event.respond(f"Некорректний формат ввода для елемента: '{item}'")
                     return
 
-            with Session() as session:
-                user = session.query(Main).filter(Main.id == user_id).first()
-                if user:
-                    existing_tasks = user.tasks.split('; ') if user.tasks else []
-                    existing_due_dates = user.due_dates.split('; ') if user.due_dates else []
+            if valid_input:
+                with Session() as session:
+                    user = session.query(Main).filter(Main.id == user_id).first()
+                    if user:
+                        existing_tasks = user.tasks.split('; ') if user.tasks else []
+                        existing_due_dates = user.due_dates.split('; ') if user.due_dates else []
 
-                    all_tasks = existing_tasks + new_tasks
-                    all_due_dates = existing_due_dates + new_due_dates
+                        all_tasks = existing_tasks + new_tasks
+                        all_due_dates = existing_due_dates + new_due_dates
 
-                    user.tasks = '; '.join(all_tasks)
-                    user.due_dates = '; '.join(all_due_dates)
-                    session.commit()
+                        user.tasks = '; '.join(all_tasks)
+                        user.due_dates = '; '.join(all_due_dates)
+                        session.commit()
 
-            del current_user_state[user_id]
+                del current_user_state[user_id]
 
-            await event.respond(f'Список тем оновлено:\n' +
-                                '\n'.join([f'{task} - {due_date}' for task, due_date in zip(all_tasks, all_due_dates)]))
+                await event.respond(f'Список тем обновлен:\n' +
+                                    '\n'.join([f'{task} - {due_date}' for task, due_date in zip(all_tasks, all_due_dates)]))
+
+
 
         elif state == 'waiting_for_task_deletion':
             task_to_remove = event.text.strip().casefold()
