@@ -6,6 +6,7 @@ from telethon import TelegramClient, events, Button as button
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
+import logging
 from db import Session, Main
 
 load_dotenv()
@@ -114,6 +115,10 @@ async def set_time(event):
         if len(time_parts) == 2 and time_parts[0].isdigit() and time_parts[1].isdigit():
             hours = int(time_parts[0])
             minutes = int(time_parts[1])
+
+            # Добавляем 3 часа и корректируем время
+            hours = (hours + 3) % 24
+
             if 0 <= hours < 24 and 0 <= minutes < 60:
                 user_id = event.sender_id
                 reminder_time = f'{hours:02d}:{minutes:02d}'
@@ -142,6 +147,7 @@ async def set_time(event):
             await event.respond("Введіть час у форматі ГГ:ХХ, наприклад /set_time 14:30")
     else:
         await event.respond("Введіть команду у форматі /set_time ГГ:ХХ, наприклад /set_time 14:30")
+
 
 @client.on(events.NewMessage())
 async def handle_message(event):
