@@ -3,7 +3,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from db import Session, Main
 import datetime
+import random
 
+# Настройки API и токен
 api_hash = "460dbd52a66709679d8d65950720fe22"
 api_id = "29195129"
 bot_token = "7007501488:AAHvPHGw7XxutiZUPAbO_PE2x0WEX1DzcRY"
@@ -20,6 +22,8 @@ character_images = {
     100: '/Users/leonidlisovskiy/Desktop/TG-BOT/bot/imgs/100.png',
 }
 
+monster_image = '/Users/leonidlisovskiy/Desktop/TG-BOT/bot/imgs/monster.gif'  # Путь к изображению монстра
+
 def update_character_image(progress):
     if progress < 50:
         return character_images[25]
@@ -30,13 +34,11 @@ def update_character_image(progress):
     else:
         return character_images[100]
 
-
 def calculate_progress(completed_tasks_count, total_tasks_count):
     if total_tasks_count == 0:
         return 0
     progress = (completed_tasks_count / total_tasks_count) * 100
     return round(progress, 2)
-
 
 @client.on(events.NewMessage(pattern='/start'))
 async def start(event):
@@ -80,7 +82,24 @@ async def send_all_commands(event):
     await event.respond('''
 /set_time - зазначити час нагадувань (чч:хх)
 /my_tasks - всі задачі
+/show_exp - показати ваш досвід
 ''')
+
+
+@client.on(events.NewMessage(pattern='/my_tasks'))
+async def show_tasks(event):
+    user_id = event.sender_id
+
+    with Session() as session:
+        user = session.query(Main).filter(Main.id == user_id).first()
+        if user and user.tasks:
+            tasks = user.tasks.split('; ')
+            due_dates = user.due_dates.split('; ')
+            task_list = '\n'.join([f'{task} - {due_date}' for task, due_date in zip(tasks, due_dates)])
+            await event.respond(f'Ось ваші теми:\n{task_list}')
+        else:
+            await event.respond("У вас немає запланованих тем.")
+
 
 @client.on(events.NewMessage(pattern='/set_time'))
 async def set_time(event):
@@ -214,55 +233,55 @@ async def handle_message(event):
                             existing_tasks_lower.pop(index)
 
                         user.tasks = '; '.join(existing_tasks)
-                        user.due_dates = '; '.join([date for t, date in zip(existing_tasks, existing_due_dates) if t in existing_tasks])
-                        user.experience += 10
-
-                        completed_tasks_count = total_tasks_count - len(existing_tasks)
-                        progress = calculate_progress(completed_tasks_count, total_tasks_count)
-                        user.progress = progress
+                        user.due_dates = '; '.join(existing_due_dates)
+                        user.experience += len(completed) * 10
+                        user.progress = calculate_progress(len(completed), total_tasks_count)
                         session.commit()
 
-                        character_image = update_character_image(user.progress)
-
-                        await client.send_file(event.chat_id, character_image, caption=f"Непогано! Прогрес: {user.progress}%")
-                        response = f'Теми оновлено. Поточний прогрес: {user.progress}%.'
+                        progress_image = update_character_image(user.progress)
+                        await event.respond(f'Вітаємо! Ви виконали {len(completed)} завдання(-я). Ваш досвід: {user.experience}.\n\nВаша поточна прогресія: {user.progress}%.', file=progress_image)
                     else:
-                        response = "Немає тем для видалення або вони не знайдені."
+                        await event.respond("Немає виконаних завдань з вказаних.")
+                
+            del current_user_state[user_id]
 
-                del current_user_state[user_id]
-
-                await event.respond(response)
-
+@client.on(events.NewMessage(pattern='/show_exp'))
+async def show_exp(event):
+    user_id = event.sender_id
+    with Session() as session:
+        user = session.query(Main).filter(Main.id == user_id).first()
+        if user:
+            await event.respond(f'Ваш досвід: {user.experience}')
+        else:
+            await event.respond("Користувач не знайдено.")
 
 async def send_user_reminder(user_id):
-    enter_tasks = [
-                [button.inline("Ввести теми", b'enter_tasks')],
-                [button.inline("Видалити тему", b'delete')],
-                [button.inline("Відмітити як виконані", b'completed_tasks')]
-            ]
     with Session() as session:
         user = session.query(Main).filter(Main.id == user_id).first()
-        if user and user.tasks:
-            task_list = user.tasks.split('; ')
-                   
-            await client.send_message(user_id, f"Нагадування! Ви маєте наступні завдання:\n" +
-                                      '\n'.join(task_list), buttons=enter_tasks)
-        else:
-            pass
+        if user:
+            await client.send_message(user_id, "Не забудьте перевірити свої завдання!")
 
-@client.on(events.NewMessage(pattern='/my_tasks'))
-async def show_tasks(event):
-    user_id = event.sender_id
-
+async def check_inactivity():
+    now = datetime.datetime.now()
     with Session() as session:
-        user = session.query(Main).filter(Main.id == user_id).first()
-        if user and user.tasks:
-            tasks = user.tasks.split('; ')
-            due_dates = user.due_dates.split('; ')
-            task_list = '\n'.join([f'{task} - {due_date}' for task, due_date in zip(tasks, due_dates)])
-            await event.respond(f'Ось ваші теми:\n{task_list}')
-        else:
-            await event.respond("У вас немає запланованих тем.")
+        for user in session.query(Main).all():
+            last_active = user.last_active or now
+            if (now - last_active).total_seconds() > 60:  
+                user.experience = max(user.experience - 5, 0)
+                session.commit()
+                
+                await client.send_message(user.id, "Вас знайшов монстр!", file=monster_image)
 
+scheduler.add_job(check_inactivity, 'interval', minutes=1)
 scheduler.start()
+
+@client.on(events.NewMessage())
+async def update_last_active(event):
+    user_id = event.sender_id
+    with Session() as session:
+        user = session.query(Main).filter(Main.id == user_id).first()
+        if user:
+            user.last_active = datetime.datetime.now()
+            session.commit()
+
 client.run_until_disconnected()

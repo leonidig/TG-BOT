@@ -1,7 +1,7 @@
 from .. import Base
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
-
+from datetime import datetime
 
 
 class Main(Base):
@@ -11,4 +11,4 @@ class Main(Base):
     experience: Mapped[int] 
     progress: Mapped[int]
     due_dates: Mapped[str]
-    #reminder_time: Mapped[str] = mapped_column(String(5))
+    last_active: Mapped[datetime] = mapped_column(default=datetime.now())
