@@ -2,3 +2,4 @@
 /.venv
 /bot_session.session
 /tasks.db
+*.env

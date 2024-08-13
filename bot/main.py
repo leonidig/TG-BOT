@@ -1,14 +1,17 @@
-from telethon import TelegramClient, events, Button as button
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
-from db import Session, Main
+from os import getenv
 import datetime
 import random
 
+from telethon import TelegramClient, events, Button as button
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from dotenv import load_dotenv
+from db import Session, Main
 
-api_hash = "460dbd52a66709679d8d65950720fe22"
-api_id = "29195129"
-bot_token = "7007501488:AAHvPHGw7XxutiZUPAbO_PE2x0WEX1DzcRY"
+load_dotenv()
+api_hash = getenv('api_hash')
+api_id = getenv('api_id')
+bot_token = getenv('bot_token')
 
 client = TelegramClient('bot_session', api_id, api_hash).start(bot_token=bot_token)
 scheduler = AsyncIOScheduler()
