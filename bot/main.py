@@ -51,8 +51,9 @@ async def start(event):
         [button.inline("Видалити тему", b'delete')],
         [button.inline("Відмітити як виконані", b'completed_tasks')]
     ]
-    
-    await event.respond(f'Привіт, {first_name}!', buttons=enter_tasks)
+    start_hero = 'bot/imgs/start.gif'
+    await client.send_file(event.chat_id, start_hero, caption=f'Привіт, {first_name}!Зверху твій персонаж, якщо хочеш його прокращити та стати продуктивніше - заходь частіше!\nЦей бот створений для введення своїх тасків, їх відстежування, видалення.\nГоловна фішка цього бота - гейміфікфція щоб використання бота було цікавим та захоплюючим.\nby @big_pencil19 & @penoplastiz', buttons=enter_tasks)
+
     
     with Session() as session:
         user = session.query(Main).filter(Main.id == sender.id).first()
@@ -84,6 +85,7 @@ async def send_all_commands(event):
 /set_time - зазначити час нагадувань (чч:хх)
 /my_tasks - всі задачі
 /show_exp - показати ваш досвід
+/difficulty - задати рівень складності(1-3)
 /start - запуск
 ''')
 
@@ -273,6 +275,25 @@ async def show_experience(event):
         else:
             await event.respond("Користувач не знайден.")
 
+difficulty_levels = {1: 10, 2: 15, 3: 20}
+
+
+@client.on(events.NewMessage(pattern='/difficulty'))
+async def set_difficulty(event):
+    user_id = event.sender_id
+    user_input = event.text.split()
+
+    if len(user_input) == 2 and user_input[1].isdigit():
+        difficulty_level = int(user_input[1])
+
+        if difficulty_level in [1, 2, 3]:
+            current_user_state[user_id] = {'difficulty': difficulty_level}
+            await event.respond(f'Рівень складності заданий на {difficulty_level}.')
+        else:
+            await event.respond("Рівень скоадності повинен бути 1 / 2 / 3.\n1 = -10exp\n2 = -15exp\n20 = -20exp")
+    else:
+        await event.respond("Введіть команду у форматі: /difficulty [1|2|3]")
+
 async def send_user_reminder(user_id):
     now = datetime.datetime.now().date()
     previous_day = now - datetime.timedelta(days=1)
@@ -293,21 +314,33 @@ async def send_user_reminder(user_id):
             if missed_tasks:
                 missed_tasks_list = '\n'.join(missed_tasks)
                 
-                user.experience -= 10
-                session.commit()
-                monster = random.choice(monsters_images)
-                print("*" * 80)
-                print(monster)
-                await client.send_message(
-                    user_id,
-                    f'Ви пропустили тему за  {previous_day}:\n{missed_tasks_list}\nМонстер це виявив та зняв у вас 10exp.\nТепер в тебе: {user.experience} exp.',
-                    file=monster
-                )
+                user_difficulty = current_user_state.get(user_id, {}).get('difficulty', 1)
+                exp_deduction = difficulty_levels.get(user_difficulty, 10)
+
+                user.experience -= exp_deduction
+                if user.experience < 0:
+                    user.experience = 0
+                    session.commit()
+                    game_over_image = 'bot/imgs/game_over.jpg' 
+                    await client.send_message(
+                        user_id,
+                        f'Ви пропустили тему за {previous_day}:\n{missed_tasks_list}\nМонстр це виявив та зняв у вас {exp_deduction} exp.\nТепер в тебе: {user.experience} exp.',
+                        file=game_over_image
+                    )
+                else:
+                    session.commit()
+                    monster = random.choice(monsters_images)
+                    await client.send_message(
+                        user_id,
+                        f'Ви пропустили тему за {previous_day}:\n{missed_tasks_list}\nМонстр це виявив та зняв у вас {exp_deduction} exp.\nТепер в тебе: {user.experience} exp.',
+                        file=monster
+                    )
             else:
                 await client.send_message(
                     user_id,
-                    "Не забудьте проверить свои задания!"
+                    "Не забудьте перевірити свої завдання!"
                 )
+
 
 scheduler.start()
 client.run_until_disconnected()
