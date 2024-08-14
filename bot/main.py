@@ -1,12 +1,15 @@
 from os import getenv
-import datetime
+import sys
+from datetime import timedelta, datetime
 import random
 import re
+from telethon import functions
 from telethon import TelegramClient, events, Button as button
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 import logging
+from functools import wraps
 from db import Session, Main
 
 load_dotenv()
@@ -29,6 +32,43 @@ character_images = {
 monsters_images = [
                     'bot/imgs/monsters/1.png', 'bot/imgs/monsters/2.png', 'bot/imgs/monsters/3.png', 'bot/imgs/monsters/4.png', 'bot/imgs/monsters/5.png', 'bot/imgs/monsters/6.png', 'bot/imgs/monsters/7.png', 'bot/imgs/monsters/8.png', 'bot/imgs/monsters/9.png', 'bot/imgs/monsters/10.png', 'bot/imgs/monsters/11.png', 'bot/imgs/monsters/12.png', 'bot/imgs/monsters/13.png', 'bot/imgs/monsters/14.png', 'bot/imgs/monsters/15.png', 'bot/imgs/monsters/16.png', 'bot/imgs/monsters/17.png', 'bot/imgs/monsters/18.png', 'bot/imgs/monsters/19.png', 'bot/imgs/monsters/20.png', 'bot/imgs/monsters/21.gif'
 ]
+
+
+log_filename = 'bot_logs.log'
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    encoding='utf-8'
+)
+logger = logging.getLogger(__name__)
+
+
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+logger.addHandler(console_handler)
+
+
+def log_function(func):
+    @wraps(func)
+    async def wrapper(event, *args, **kwargs):
+        user_id = event.sender_id
+        user_name = (await event.get_sender()).first_name
+        logger.info(f"[{user_name} ({user_id})] Розпочав виконання функції: {func.__name__}")
+
+        try:
+            result = await func(event, *args, **kwargs)
+            logger.info(f"[{user_name} ({user_id})] Успішно завершив виконання функції: {func.__name__}")
+            return result
+        except Exception as e:
+            logger.error(f"[{user_name} ({user_id})] Помилка при виконанні функції: {func.__name__} - {e}")
+            raise
+
+    return wrapper
+
+
+
 def update_character_image(progress):
     if progress < 50:
         return character_images[25]
@@ -46,6 +86,7 @@ def calculate_progress(completed_tasks_count, total_tasks_count):
     return round(progress, 2)
 
 @client.on(events.NewMessage(pattern='/start'))
+@log_function
 async def start(event):
     global sender
     sender = await event.get_sender()
@@ -57,7 +98,14 @@ async def start(event):
     ]
     start_hero = 'bot/imgs/start.png'
     await client.send_file(event.chat_id, start_hero, caption=f'Привіт, {first_name}! Зверху твій персонаж, якщо хочеш його прокращити та стати продуктивніше - заходь частіше!\nЦей бот створений для введення своїх тасків, їх відстежування, видалення.\nГоловна фішка цього бота - гейміфікфція щоб використання бота було цікавим та захоплюючим.\nby @big_pencil19 & @penoplastiz', buttons=enter_tasks)
-
+    try:
+        await client(functions.channels.ToggleAntiSpamRequest(
+            channel=event.chat_id,
+            enabled=True
+        ))
+        logger.info(f"Антиспам ввімкнен для бота {event.chat_id}")
+    except Exception as e:
+        logger.error(f"Не вдалося включити антиспам: {str(e)}")
     
     with Session() as session:
         user = session.query(Main).filter(Main.id == sender.id).first()
@@ -69,21 +117,25 @@ async def start(event):
         session.commit()
 
 @client.on(events.CallbackQuery(pattern=b'enter_tasks'))
+@log_function
 async def enter_tasks(event):
-    await event.respond("Введи свої теми і дедлайни у форматі 'тема - дедлайн(рррр/мм/дд)', розділені ; ")
+    await event.respond("Введи свої теми і дедлайни у форматі 'тема - дедлайн(рррр/мм/дд)',\nТема не може містити спец символи по типу +=*\nрозділені ; ")
     current_user_state[event.sender_id] = 'waiting_for_tasks'
 
 @client.on(events.CallbackQuery(pattern=b'delete'))
+@log_function
 async def delete_task(event):
     await event.respond("Введи назву теми для видалення: ")
     current_user_state[event.sender_id] = 'waiting_for_task_deletion'
 
 @client.on(events.CallbackQuery(pattern=b'completed_tasks'))
+@log_function
 async def completed_tasks(event):
     await event.respond("Введи ті теми, які ти пройшов, розділені ; ")
     current_user_state[event.sender_id] = 'waiting_for_completed_tasks'
 
 @client.on(events.NewMessage(pattern='/commands'))
+@log_function
 async def send_all_commands(event):
     await event.respond('''
 /set_time - зазначити час нагадувань (чч:хх)
@@ -92,8 +144,10 @@ async def send_all_commands(event):
 /difficulty - задати рівень складності(1-3)
 /start - запуск
 ''')
+    
 
 @client.on(events.NewMessage(pattern='/my_tasks'))
+@log_function
 async def show_tasks(event):
     user_id = event.sender_id
 
@@ -102,12 +156,28 @@ async def show_tasks(event):
         if user and user.tasks:
             tasks = user.tasks.split('; ')
             due_dates = user.due_dates.split('; ')
-            task_list = '\n'.join([f'{task} - {due_date}' for task, due_date in zip(tasks, due_dates)])
+
+            valid_tasks_with_dates = []
+            for task, due_date in zip(tasks, due_dates):
+                try:
+                    parsed_date = datetime.strptime(due_date, '%Y/%m/%d')
+                    valid_tasks_with_dates.append((task, due_date))
+                except ValueError:
+                    continue
+
+
+            tasks_with_dates_sorted = sorted(valid_tasks_with_dates, key=lambda x: datetime.strptime(x[1], '%Y/%m/%d'))
+
+            task_list = '\n'.join([f'{task} - {due_date}' for task, due_date in tasks_with_dates_sorted])
             await event.respond(f'Ось ваші теми:\n{task_list}')
         else:
             await event.respond("У вас немає запланованих тем.")
 
+
+
+
 @client.on(events.NewMessage(pattern='/set_time'))
+@log_function
 async def set_time(event):
     user_input = event.text.split()
     if len(user_input) == 2:
@@ -140,7 +210,7 @@ async def set_time(event):
                     id=job_id
                 )
 
-                await event.respond(f'Час нагадування встановлено коректно!')
+                await event.respond(f'Час нагадування встановлено корректно')
             else:
                 await event.respond("Некоректний час. Переконайтеся, що години від 0 до 23, а хвилини від 0 до 59")
         else:
@@ -149,26 +219,9 @@ async def set_time(event):
         await event.respond("Введіть команду у форматі /set_time ГГ:ХХ, наприклад /set_time 14:30")
 
 
-@client.on(events.NewMessage())
-async def handle_message(event):
-    user_id = event.sender_id
-
-    if user_id in current_user_state:
-        state = current_user_state[user_id]
-
-        import re
-from datetime import datetime
 
 @client.on(events.NewMessage())
-async def handle_message(event):
-    user_id = event.sender_id
-
-    if user_id in current_user_state:
-        state = current_user_state[user_id]
-
-
-
-@client.on(events.NewMessage())
+@log_function
 async def handle_message(event):
     user_id = event.sender_id
 
@@ -195,7 +248,6 @@ async def handle_message(event):
                         valid_input = False
                         await event.respond(f"Некорректний формат ввода для елемента: '{item}'")
                         return
-                    # Не проверяем корректность даты
                     new_tasks.append(task)
                     new_due_dates.append(due_date)
                 else:
@@ -213,14 +265,21 @@ async def handle_message(event):
                         all_tasks = existing_tasks + new_tasks
                         all_due_dates = existing_due_dates + new_due_dates
 
-                        user.tasks = '; '.join(all_tasks)
-                        user.due_dates = '; '.join(all_due_dates)
+                        tasks_with_dates_sorted = sorted(zip(all_tasks, all_due_dates), key=lambda x: datetime.strptime(x[1], '%Y/%m/%d'))
+
+                        sorted_tasks, sorted_due_dates = zip(*tasks_with_dates_sorted)
+
+                        user.tasks = '; '.join(sorted_tasks)
+                        user.due_dates = '; '.join(sorted_due_dates)
                         session.commit()
 
                 del current_user_state[user_id]
 
-                await event.respond(f'Список тем обновлен:\n' +
-                                    '\n'.join([f'{task} - {due_date}' for task, due_date in zip(all_tasks, all_due_dates)]))
+                await event.respond(f'Список тем оновлено:\n' +
+                                    '\n'.join([f'{task} - {due_date}' for task, due_date in zip(sorted_tasks, sorted_due_dates)]))
+
+
+
 
 
 
@@ -338,9 +397,11 @@ async def set_difficulty(event):
     else:
         await event.respond("Введіть команду у форматі: /difficulty [1|2|3]")
 
+
+
 async def send_user_reminder(user_id):
-    now = datetime.datetime.now().date()
-    previous_day = now - datetime.timedelta(days=1)
+    now = datetime.now().date()
+    previous_day = now - timedelta(days=1)
 
     with Session() as session:
         user = session.query(Main).filter(Main.id == user_id).first()
@@ -351,7 +412,7 @@ async def send_user_reminder(user_id):
                 tasks = user.tasks.split('; ')
 
                 for due_date_str, task in zip(due_dates, tasks):
-                    due_date = datetime.datetime.strptime(due_date_str, '%Y/%m/%d').date()
+                    due_date = datetime.strptime(due_date_str, '%Y/%m/%d').date()
                     if due_date == previous_day:
                         missed_tasks.append(task)
 

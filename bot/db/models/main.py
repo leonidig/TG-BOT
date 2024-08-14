@@ -11,4 +11,4 @@ class Main(Base):
     experience: Mapped[int] 
     progress: Mapped[int]
     due_dates: Mapped[str]
-    last_active: Mapped[datetime] = mapped_column(default=datetime.now())
+    # last_active: Mapped[datetime] = mapped_column(default=datetime.now())

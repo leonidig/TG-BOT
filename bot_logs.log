@@ -1,0 +1,90 @@
+2024-08-14 17:23:31,184 - INFO - Scheduler started
+2024-08-14 17:23:44,751 - INFO - [лёня (941990323)] Розпочав виконання функції: start
+2024-08-14 17:23:44,752 - INFO - Uploading file of 2412476 bytes in 19 chunks of 131072
+2024-08-14 17:23:54,968 - ERROR - Не вдалося включити антиспам: Cannot cast InputPeerUser to any kind of InputChannel.
+2024-08-14 17:23:54,970 - INFO - BEGIN (implicit)
+2024-08-14 17:23:54,973 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-14 17:23:54,973 - INFO - [generated in 0.00074s] (941990323, 1, 0)
+2024-08-14 17:23:54,976 - INFO - INSERT INTO data (owner, tasks, experience, progress, due_dates, id) VALUES (?, ?, ?, ?, ?, ?)
+2024-08-14 17:23:54,976 - INFO - [generated in 0.00045s] ('лёня', '', 0, 0, '', 941990323)
+2024-08-14 17:23:54,978 - INFO - COMMIT
+2024-08-14 17:23:54,983 - INFO - [лёня (941990323)] Успішно завершив виконання функції: start
+2024-08-14 17:23:54,984 - INFO - [лёня (941990323)] Розпочав виконання функції: handle_message
+2024-08-14 17:23:54,984 - INFO - [лёня (941990323)] Успішно завершив виконання функції: handle_message
+2024-08-14 17:24:03,314 - INFO - [лёня (941990323)] Розпочав виконання функції: send_all_commands
+2024-08-14 17:24:03,433 - INFO - [лёня (941990323)] Успішно завершив виконання функції: send_all_commands
+2024-08-14 17:24:03,434 - INFO - [лёня (941990323)] Розпочав виконання функції: handle_message
+2024-08-14 17:24:03,434 - INFO - [лёня (941990323)] Успішно завершив виконання функції: handle_message
+2024-08-14 17:24:04,959 - INFO - [лёня (941990323)] Розпочав виконання функції: show_tasks
+2024-08-14 17:24:04,960 - INFO - BEGIN (implicit)
+2024-08-14 17:24:04,960 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-14 17:24:04,961 - INFO - [cached since 9.989s ago] (941990323, 1, 0)
+2024-08-14 17:24:05,104 - INFO - ROLLBACK
+2024-08-14 17:24:05,104 - INFO - [лёня (941990323)] Успішно завершив виконання функції: show_tasks
+2024-08-14 17:24:05,104 - INFO - [лёня (941990323)] Розпочав виконання функції: handle_message
+2024-08-14 17:24:05,105 - INFO - [лёня (941990323)] Успішно завершив виконання функції: handle_message
+2024-08-14 17:24:07,151 - INFO - [лёня (941990323)] Розпочав виконання функції: enter_tasks
+2024-08-14 17:24:07,281 - INFO - [лёня (941990323)] Успішно завершив виконання функції: enter_tasks
+2024-08-14 17:24:49,209 - INFO - [лёня (941990323)] Розпочав виконання функції: handle_message
+2024-08-14 17:24:49,210 - INFO - BEGIN (implicit)
+2024-08-14 17:24:49,210 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-14 17:24:49,211 - INFO - [cached since 54.24s ago] (941990323, 1, 0)
+2024-08-14 17:24:49,214 - INFO - UPDATE data SET tasks=?, due_dates=? WHERE data.id = ?
+2024-08-14 17:24:49,214 - INFO - [generated in 0.00036s] ('tema; sigma; aboba', '2024/08/10; 2024/08/15; 2024/09/08', 941990323)
+2024-08-14 17:24:49,230 - INFO - COMMIT
+2024-08-14 17:24:49,308 - INFO - [лёня (941990323)] Успішно завершив виконання функції: handle_message
+2024-08-14 17:24:53,149 - INFO - [лёня (941990323)] Розпочав виконання функції: show_tasks
+2024-08-14 17:24:53,150 - INFO - BEGIN (implicit)
+2024-08-14 17:24:53,150 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-14 17:24:53,151 - INFO - [cached since 58.18s ago] (941990323, 1, 0)
+2024-08-14 17:24:53,224 - INFO - ROLLBACK
+2024-08-14 17:24:53,224 - INFO - [лёня (941990323)] Успішно завершив виконання функції: show_tasks
+2024-08-14 17:24:53,224 - INFO - [лёня (941990323)] Розпочав виконання функції: handle_message
+2024-08-14 17:24:53,225 - INFO - [лёня (941990323)] Успішно завершив виконання функції: handle_message
+2024-08-14 17:25:13,464 - INFO - [лёня (941990323)] Розпочав виконання функції: handle_message
+2024-08-14 17:25:13,465 - INFO - [лёня (941990323)] Успішно завершив виконання функції: handle_message
+2024-08-14 17:25:13,465 - INFO - BEGIN (implicit)
+2024-08-14 17:25:13,466 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-14 17:25:13,466 - INFO - [cached since 78.49s ago] (941990323, 1, 0)
+2024-08-14 17:25:13,611 - INFO - ROLLBACK
+2024-08-14 17:25:40,877 - INFO - Scheduler started
+2024-08-14 17:25:49,988 - INFO - [лёня (941990323)] Розпочав виконання функції: set_time
+2024-08-14 17:25:50,063 - INFO - [лёня (941990323)] Успішно завершив виконання функції: set_time
+2024-08-14 17:25:50,064 - INFO - [лёня (941990323)] Розпочав виконання функції: handle_message
+2024-08-14 17:25:50,064 - INFO - [лёня (941990323)] Успішно завершив виконання функції: handle_message
+2024-08-14 17:25:54,914 - INFO - [лёня (941990323)] Розпочав виконання функції: set_time
+2024-08-14 17:25:54,916 - INFO - BEGIN (implicit)
+2024-08-14 17:25:54,919 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-14 17:25:54,919 - INFO - [generated in 0.00053s] (941990323, 1, 0)
+2024-08-14 17:25:54,920 - INFO - COMMIT
+2024-08-14 17:25:54,920 - INFO - Added job "send_user_reminder" to job store "default"
+2024-08-14 17:25:55,108 - INFO - [лёня (941990323)] Успішно завершив виконання функції: set_time
+2024-08-14 17:25:55,109 - INFO - [лёня (941990323)] Розпочав виконання функції: handle_message
+2024-08-14 17:25:55,109 - INFO - [лёня (941990323)] Успішно завершив виконання функції: handle_message
+2024-08-14 17:27:00,015 - INFO - Running job "send_user_reminder (trigger: cron[hour='17', minute='27'], next run at: 2024-08-15 17:27:00 EEST)" (scheduled at 2024-08-14 17:27:00+03:00)
+2024-08-14 17:27:00,016 - INFO - BEGIN (implicit)
+2024-08-14 17:27:00,017 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-14 17:27:00,017 - INFO - [cached since 65.1s ago] (941990323, 1, 0)
+2024-08-14 17:27:00,193 - INFO - ROLLBACK
+2024-08-14 17:27:00,193 - INFO - Job "send_user_reminder (trigger: cron[hour='17', minute='27'], next run at: 2024-08-15 17:27:00 EEST)" executed successfully
