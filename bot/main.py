@@ -187,7 +187,7 @@ async def set_time(event):
             minutes = int(time_parts[1])
 
 
-            hours = (hours - 3) % 24
+            hours = (hours - 0) % 24
 
             if 0 <= hours < 24 and 0 <= minutes < 60:
                 user_id = event.sender_id
