@@ -55,7 +55,7 @@ async def start(event):
         [button.inline("Видалити тему", b'delete')],
         [button.inline("Відмітити як виконані", b'completed_tasks')]
     ]
-    start_hero = 'bot/imgs/start.gif'
+    start_hero = 'bot/imgs/start.png'
     await client.send_file(event.chat_id, start_hero, caption=f'Привіт, {first_name}! Зверху твій персонаж, якщо хочеш його прокращити та стати продуктивніше - заходь частіше!\nЦей бот створений для введення своїх тасків, їх відстежування, видалення.\nГоловна фішка цього бота - гейміфікфція щоб використання бота було цікавим та захоплюючим.\nby @big_pencil19 & @penoplastiz', buttons=enter_tasks)
 
     
@@ -166,12 +166,7 @@ async def handle_message(event):
     if user_id in current_user_state:
         state = current_user_state[user_id]
 
-        import re
-from datetime import datetime
 
-import re
-
-import re
 
 @client.on(events.NewMessage())
 async def handle_message(event):
