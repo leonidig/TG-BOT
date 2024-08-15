@@ -53,6 +53,7 @@ console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(
 logger.addHandler(console_handler)
 
 
+
 def log_function(func):
     @wraps(func)
     async def wrapper(event, *args, **kwargs):
@@ -368,7 +369,6 @@ async def handle_message(event):
             del current_user_state[user_id]
 
 @client.on(events.NewMessage(pattern='/show_exp'))
-@log_function
 async def show_experience(event):
     user_id = event.sender_id
 
@@ -388,7 +388,6 @@ difficulty_levels = {1: 10, 2: 15, 3: 20}
 
 
 @client.on(events.NewMessage(pattern='/difficulty'))
-@log_function
 async def set_difficulty(event):
     user_id = event.sender_id
     user_input = event.text.split()
@@ -405,7 +404,7 @@ async def set_difficulty(event):
         await event.respond("Введіть команду у форматі: /difficulty [1|2|3]")
 
 
-@log_function
+
 async def send_user_reminder(user_id):
     now = datetime.now().date()
     previous_day = now - timedelta(days=1)
