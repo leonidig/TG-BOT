@@ -12,13 +12,16 @@ import logging
 from functools import wraps
 from db import Session, Main
 
+
 load_dotenv()
 api_hash = getenv('api_hash')
 api_id = getenv('api_id')
 bot_token = getenv('bot_token')
 
+
 client = TelegramClient('bot_session', api_id, api_hash).start(bot_token=bot_token)
 scheduler = AsyncIOScheduler()
+
 
 current_user_state = {}
 
@@ -247,9 +250,11 @@ async def handle_message(event):
                     else:
                         valid_input = False
                         await event.respond(f"Некорректний формат ввода для елемента: '{item}'")
+                        logger.warning(f"[{user_id}] Некорректний формат ввода для елемента: {item}")
                         return
                     new_tasks.append(task)
                     new_due_dates.append(due_date)
+                    logger.warning(f"[{user_id}] Добавлена задача: {task}")#, срок: {due_date}")
                 else:
                     valid_input = False
                     await event.respond(f"Некорректний формат ввода для елемента: '{item}'")
@@ -272,14 +277,14 @@ async def handle_message(event):
                         user.tasks = '; '.join(sorted_tasks)
                         user.due_dates = '; '.join(sorted_due_dates)
                         session.commit()
+                        logger.info(f"[{user_id}] Список задач оновлен та збережен в бд ")
+                    else:
+                        logger.warning(f"[{user_id}] користувач не знайден в бд")
 
                 del current_user_state[user_id]
 
                 await event.respond(f'Список тем оновлено:\n' +
                                     '\n'.join([f'{task} - {due_date}' for task, due_date in zip(sorted_tasks, sorted_due_dates)]))
-
-
-
 
 
 
@@ -363,6 +368,7 @@ async def handle_message(event):
             del current_user_state[user_id]
 
 @client.on(events.NewMessage(pattern='/show_exp'))
+@log_function
 async def show_experience(event):
     user_id = event.sender_id
 
@@ -382,6 +388,7 @@ difficulty_levels = {1: 10, 2: 15, 3: 20}
 
 
 @client.on(events.NewMessage(pattern='/difficulty'))
+@log_function
 async def set_difficulty(event):
     user_id = event.sender_id
     user_input = event.text.split()
@@ -398,7 +405,7 @@ async def set_difficulty(event):
         await event.respond("Введіть команду у форматі: /difficulty [1|2|3]")
 
 
-
+@log_function
 async def send_user_reminder(user_id):
     now = datetime.now().date()
     previous_day = now - timedelta(days=1)
@@ -441,6 +448,7 @@ async def send_user_reminder(user_id):
                         file=monster
                     )
             else:
+                logger.info(f"[{user_id}] просрочені задачі не знайдені")
                 await client.send_message(
                     user_id,
                     "Не забудьте перевірити свої завдання!"
