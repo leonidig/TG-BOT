@@ -1,0 +1,59 @@
+2024-08-15 17:34:50,623 - INFO - Scheduler started
+2024-08-15 17:35:09,887 - INFO - [<qwas/> (6844154573)] Розпочав виконання функції: start
+2024-08-15 17:35:09,888 - INFO - Uploading file of 2412476 bytes in 19 chunks of 131072
+2024-08-15 17:35:20,580 - ERROR - Не вдалося включити антиспам: Cannot cast InputPeerUser to any kind of InputChannel.
+2024-08-15 17:35:20,582 - INFO - BEGIN (implicit)
+2024-08-15 17:35:20,584 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-15 17:35:20,584 - INFO - [generated in 0.00064s] (6844154573, 1, 0)
+2024-08-15 17:35:20,587 - INFO - INSERT INTO data (owner, tasks, experience, progress, due_dates, id) VALUES (?, ?, ?, ?, ?, ?)
+2024-08-15 17:35:20,588 - INFO - [generated in 0.00047s] ('<qwas/>', '', 0, 0, '', 6844154573)
+2024-08-15 17:35:20,590 - INFO - COMMIT
+2024-08-15 17:35:20,596 - INFO - [<qwas/> (6844154573)] Успішно завершив виконання функції: start
+2024-08-15 17:35:20,596 - INFO - [<qwas/> (6844154573)] Розпочав виконання функції: handle_message
+2024-08-15 17:35:20,597 - INFO - [<qwas/> (6844154573)] Успішно завершив виконання функції: handle_message
+2024-08-15 17:35:29,308 - INFO - [<qwas/> (6844154573)] Розпочав виконання функції: send_all_commands
+2024-08-15 17:35:29,423 - INFO - [<qwas/> (6844154573)] Успішно завершив виконання функції: send_all_commands
+2024-08-15 17:35:29,424 - INFO - [<qwas/> (6844154573)] Розпочав виконання функції: handle_message
+2024-08-15 17:35:29,424 - INFO - [<qwas/> (6844154573)] Успішно завершив виконання функції: handle_message
+2024-08-15 17:35:40,642 - INFO - [<qwas/> (6844154573)] Розпочав виконання функції: show_tasks
+2024-08-15 17:35:40,643 - INFO - BEGIN (implicit)
+2024-08-15 17:35:40,643 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-15 17:35:40,644 - INFO - [cached since 20.06s ago] (6844154573, 1, 0)
+2024-08-15 17:35:40,704 - INFO - ROLLBACK
+2024-08-15 17:35:40,704 - INFO - [<qwas/> (6844154573)] Успішно завершив виконання функції: show_tasks
+2024-08-15 17:35:40,704 - INFO - [<qwas/> (6844154573)] Розпочав виконання функції: handle_message
+2024-08-15 17:35:40,705 - INFO - [<qwas/> (6844154573)] Успішно завершив виконання функції: handle_message
+2024-08-15 17:35:42,157 - INFO - [<qwas/> (6844154573)] Розпочав виконання функції: enter_tasks
+2024-08-15 17:35:42,288 - INFO - [<qwas/> (6844154573)] Успішно завершив виконання функції: enter_tasks
+2024-08-15 17:35:48,920 - INFO - [<qwas/> (6844154573)] Розпочав виконання функції: handle_message
+2024-08-15 17:35:48,920 - WARNING - [6844154573] Добавлена задача: Test
+2024-08-15 17:35:48,921 - INFO - BEGIN (implicit)
+2024-08-15 17:35:48,922 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-15 17:35:48,923 - INFO - [cached since 28.34s ago] (6844154573, 1, 0)
+2024-08-15 17:35:48,926 - INFO - UPDATE data SET tasks=?, due_dates=? WHERE data.id = ?
+2024-08-15 17:35:48,927 - INFO - [generated in 0.00034s] ('Test', '2024/08/17', 6844154573)
+2024-08-15 17:35:48,930 - INFO - COMMIT
+2024-08-15 17:35:48,936 - INFO - [6844154573] Список задач оновлен та збережен в бд 
+2024-08-15 17:35:48,992 - INFO - [<qwas/> (6844154573)] Успішно завершив виконання функції: handle_message
+2024-08-15 17:36:37,745 - INFO - [<qwas/> (6844154573)] Розпочав виконання функції: delete_task
+2024-08-15 17:36:37,941 - INFO - [<qwas/> (6844154573)] Успішно завершив виконання функції: delete_task
+2024-08-15 17:37:16,657 - INFO - [<qwas/> (6844154573)] Розпочав виконання функції: handle_message
+2024-08-15 17:37:16,658 - INFO - BEGIN (implicit)
+2024-08-15 17:37:16,658 - INFO - SELECT data.owner AS data_owner, data.tasks AS data_tasks, data.experience AS data_experience, data.progress AS data_progress, data.due_dates AS data_due_dates, data.id AS data_id 
+FROM data 
+WHERE data.id = ?
+ LIMIT ? OFFSET ?
+2024-08-15 17:37:16,659 - INFO - [cached since 116.1s ago] (6844154573, 1, 0)
+2024-08-15 17:37:16,660 - INFO - UPDATE data SET tasks=?, due_dates=? WHERE data.id = ?
+2024-08-15 17:37:16,661 - INFO - [cached since 87.73s ago] ('', '', 6844154573)
+2024-08-15 17:37:16,663 - INFO - COMMIT
+2024-08-15 17:37:16,751 - INFO - [<qwas/> (6844154573)] Успішно завершив виконання функції: handle_message
